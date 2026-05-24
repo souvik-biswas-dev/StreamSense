@@ -454,6 +454,114 @@ classDiagram
 
 ---
 
+### Sequence Diagrams — Authentication Flows
+
+#### User Registration
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Register as Register Component
+    participant Axios as Axios (Public)
+    participant Server as Go Server
+    participant DB as MongoDB
+
+    User->>Register: Fill form (name, email, password, genres)
+    Register->>Axios: POST /register {user data}
+    Axios->>Server: HTTP POST /register
+    Server->>Server: Validate input fields
+    Server->>DB: Find user by email
+    DB-->>Server: No existing user found
+    Server->>Server: Hash password (bcrypt)
+    Server->>DB: Insert new User document
+    DB-->>Server: Inserted OK
+    Server-->>Axios: 201 Created
+    Axios-->>Register: Success response
+    Register->>User: Redirect to /login
+```
+
+#### User Login
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Login as Login Component
+    participant Axios as Axios (Public)
+    participant Server as Go Server
+    participant TokenUtil as Token Util
+    participant DB as MongoDB
+    participant Auth as AuthProvider
+
+    User->>Login: Enter email + password
+    Login->>Axios: POST /login {email, password}
+    Axios->>Server: HTTP POST /login
+    Server->>DB: Find user by email
+    DB-->>Server: User document
+    Server->>Server: Verify password (bcrypt.Compare)
+    Server->>TokenUtil: GenerateAllTokens(email, name, role, userId)
+    TokenUtil-->>Server: access_token (24h) + refresh_token (7d)
+    Server->>DB: UpdateAllTokens(userId, tokens)
+    DB-->>Server: Updated OK
+    Server-->>Axios: 200 OK + Set-Cookie (access_token, refresh_token)
+    Axios-->>Login: UserResponse payload
+    Login->>Auth: setAuth(userResponse)
+    Auth->>Auth: Persist to localStorage
+    Login->>User: Redirect to original location or /
+```
+
+#### Silent Token Refresh
+
+```mermaid
+sequenceDiagram
+    participant Component as React Component
+    participant Interceptor as Axios Interceptor
+    participant Server as Go Server
+    participant TokenUtil as Token Util
+    participant DB as MongoDB
+
+    Component->>Interceptor: API call with expired access_token
+    Interceptor->>Server: Original request → 401 Unauthorized
+    Server-->>Interceptor: 401 response
+    Interceptor->>Interceptor: Queue subsequent requests
+    Interceptor->>Server: POST /refresh (refresh_token cookie)
+    Server->>Server: Read refresh_token from cookie
+    Server->>TokenUtil: ValidateToken(refresh_token)
+    TokenUtil-->>Server: Valid claims
+    Server->>TokenUtil: GenerateAllTokens(...) → new access_token
+    TokenUtil-->>Server: New access_token
+    Server->>DB: UpdateAllTokens(userId, new tokens)
+    DB-->>Server: Updated OK
+    Server-->>Interceptor: 200 OK + Set-Cookie (new access_token)
+    Interceptor->>Interceptor: Flush queued requests
+    Interceptor->>Server: Retry original request with new token
+    Server-->>Component: Original response data
+```
+
+#### User Logout
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Header as Header Component
+    participant Axios as Axios (Public)
+    participant Server as Go Server
+    participant DB as MongoDB
+    participant Auth as AuthProvider
+
+    User->>Header: Click Logout
+    Header->>Axios: POST /logout {user_id}
+    Axios->>Server: HTTP POST /logout
+    Server->>DB: Clear tokens (token = "", refresh_token = "")
+    DB-->>Server: Updated OK
+    Server-->>Axios: 200 OK + Set-Cookie (MaxAge=-1 clears cookies)
+    Axios-->>Header: Success
+    Header->>Auth: setAuth({})
+    Auth->>Auth: Clear localStorage
+    Header->>User: Redirect to /login
+```
+
+---
+
 ## License
 
 MIT
