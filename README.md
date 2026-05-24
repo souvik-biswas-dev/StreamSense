@@ -215,6 +215,245 @@ go build          # Compile binary
 
 ---
 
+## Low-Level Design (LLD)
+
+### Class Diagrams
+
+#### Backend Data Models
+
+```mermaid
+classDiagram
+    class User {
+        +ObjectID _id
+        +string user_id
+        +string first_name
+        +string last_name
+        +string email
+        +string password
+        +string role
+        +time created_at
+        +time updated_at
+        +string token
+        +string refresh_token
+        +Genre[] favourite_genres
+    }
+
+    class UserLogin {
+        +string email
+        +string password
+    }
+
+    class UserResponse {
+        +string user_id
+        +string first_name
+        +string last_name
+        +string email
+        +string role
+        +Genre[] favourite_genres
+    }
+
+    class Movie {
+        +ObjectID _id
+        +string imdb_id
+        +string title
+        +string poster_path
+        +string youtube_id
+        +Genre[] genre
+        +string admin_review
+        +Ranking ranking
+    }
+
+    class Genre {
+        +int genre_id
+        +string genre_name
+    }
+
+    class Ranking {
+        +int ranking_value
+        +string ranking_name
+    }
+
+    class SignedDetails {
+        +string email
+        +string first_name
+        +string last_name
+        +string role
+        +string user_id
+        +string iss
+        +int64 iat
+        +int64 exp
+    }
+
+    User "1" --> "*" Genre : favourite_genres
+    Movie "1" --> "*" Genre : genre
+    Movie "1" --> "1" Ranking : ranking
+    User --> SignedDetails : encoded into JWT
+    UserLogin --> User : authenticates
+    User --> UserResponse : projected to
+```
+
+#### Backend Layer Architecture
+
+```mermaid
+classDiagram
+    class Router {
+        +SetupUnprotectedRoutes(engine)
+        +SetupProtectedRoutes(engine)
+    }
+
+    class AuthMiddleware {
+        +Authenticate(ctx) Handler
+        -extractToken(ctx) string
+        -validateToken(token) Claims
+    }
+
+    class UserController {
+        +RegisterUser(ctx)
+        +LoginUser(ctx)
+        +LogoutHandler(ctx)
+        +RefreshTokenHandler(ctx)
+        -hashPassword(password) string
+        -verifyPassword(hashed, plain) bool
+    }
+
+    class MovieController {
+        +GetMovies(ctx)
+        +GetMovie(ctx)
+        +AddMovie(ctx)
+        +GetRecommendedMovies(ctx)
+        +AdminReviewUpdate(ctx)
+        -GetUsersFavouriteGenres(userId) Genre[]
+        -GetReviewRanking(review) Ranking
+    }
+
+    class TokenUtil {
+        +GenerateAllTokens(email, firstName, lastName, role, userId) string, string
+        +ValidateToken(token) Claims, error
+        +UpdateAllTokens(token, refreshToken, userId)
+        +ExtractTokenFromCookie(ctx) string
+    }
+
+    class DatabaseConnection {
+        +DBInstance() mongo.Client
+        +OpenCollection(client, name) mongo.Collection
+        -connectDB(uri) mongo.Client
+    }
+
+    Router --> AuthMiddleware : applies to protected routes
+    Router --> UserController : registers handlers
+    Router --> MovieController : registers handlers
+    UserController --> TokenUtil : generates and validates tokens
+    UserController --> DatabaseConnection : reads and writes users
+    MovieController --> DatabaseConnection : reads and writes movies
+    AuthMiddleware --> TokenUtil : validates tokens
+```
+
+#### Frontend Component Hierarchy
+
+```mermaid
+classDiagram
+    class App {
+        +routes JSX
+        +render() JSX
+    }
+
+    class AuthProvider {
+        +auth object
+        +setAuth function
+        +loading boolean
+        +render() JSX
+    }
+
+    class RequiredAuth {
+        +allowedRoles string[]
+        -checkAuth() boolean
+        +render() JSX
+    }
+
+    class Header {
+        +auth object
+        +handleLogout() void
+        +render() JSX
+    }
+
+    class Home {
+        +movies Movie[]
+        +loading boolean
+        +fetchMovies() void
+        +render() JSX
+    }
+
+    class Movies {
+        +movies Movie[]
+        +render() JSX
+    }
+
+    class Movie {
+        +movie object
+        +render() JSX
+    }
+
+    class Login {
+        +email string
+        +password string
+        +handleSubmit() void
+        +render() JSX
+    }
+
+    class Register {
+        +formData object
+        +genres Genre[]
+        +handleSubmit() void
+        +render() JSX
+    }
+
+    class StreamMovie {
+        +ytId string
+        +render() JSX
+    }
+
+    class Recommended {
+        +movies Movie[]
+        +loading boolean
+        +fetchRecommended() void
+        +render() JSX
+    }
+
+    class Review {
+        +movie object
+        +reviewText string
+        +handleSubmit() void
+        +render() JSX
+    }
+
+    class useAuth {
+        +auth object
+        +setAuth function
+    }
+
+    class useAxiosPrivate {
+        +axiosPrivate AxiosInstance
+        -attachInterceptors() void
+        -refreshToken() Promise
+    }
+
+    App --> AuthProvider : wraps app
+    App --> Header : always rendered
+    App --> RequiredAuth : guards protected routes
+    RequiredAuth --> Recommended : protected
+    RequiredAuth --> Review : protected (admin only)
+    RequiredAuth --> StreamMovie : protected
+    Home --> Movies : renders grid
+    Movies --> Movie : renders each card
+    Recommended --> Movies : renders recommendations
+    Login --> useAuth : reads and sets auth
+    Login --> useAxiosPrivate : API calls
+    Review --> useAxiosPrivate : API calls
+    useAxiosPrivate --> useAuth : reads auth context
+```
+
+---
+
 ## License
 
 MIT
