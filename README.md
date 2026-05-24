@@ -1,4 +1,4 @@
-# MagicStream 🎬
+# StreamSense 🎬
 
 A full-stack movie streaming and discovery platform with personalized recommendations, user reviews, and JWT-secured authentication.
 
@@ -35,7 +35,7 @@ Built with a **React + Vite** frontend and a **Go (Gin)** backend, backed by **M
 ## Project Structure
 
 ```
-MagicStream-main/
+StreamSense-main/
 ├── Client/
 │   └── magic-stream-client/   # React + Vite frontend
 │       ├── src/
@@ -46,7 +46,7 @@ MagicStream-main/
 │       └── public/
 │
 ├── Server/
-│   └── MagicStreamServer/     # Go + Gin backend
+│   └── StreamSenseServer/     # Go + Gin backend
 │       ├── controllers/       # Request handlers
 │       ├── middleware/        # JWT auth middleware
 │       ├── models/            # Data structs
@@ -72,7 +72,7 @@ MagicStream-main/
 ### Backend Setup
 
 ```bash
-cd Server/MagicStreamServer
+cd Server/StreamSenseServer
 ```
 
 Create a `.env` file:

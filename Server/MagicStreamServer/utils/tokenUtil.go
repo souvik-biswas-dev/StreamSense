@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/database"
+	"github.com/GavinLonDigital/StreamSense/Server/StreamSenseServer/database"
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -33,7 +33,7 @@ func GenerateAllTokens(email, firstName, lastName, role, userId string) (string,
 		Role:      role,
 		UserId:    userId,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "MagicStream",
+			Issuer:    "StreamSense",
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 		},
@@ -52,7 +52,7 @@ func GenerateAllTokens(email, firstName, lastName, role, userId string) (string,
 		Role:      role,
 		UserId:    userId,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "MagicStream",
+			Issuer:    "StreamSense",
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * 7 * time.Hour)),
 		},
