@@ -1,8 +1,8 @@
 package routes
 
 import (
-	controller "github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/controllers"
-	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/middleware"
+	controller "github.com/GavinLonDigital/StreamSense/Server/StreamSenseServer/controllers"
+	"github.com/GavinLonDigital/StreamSense/Server/StreamSenseServer/middleware"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )

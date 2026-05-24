@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/database"
-	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/routes"
+	"github.com/GavinLonDigital/StreamSense/Server/StreamSenseServer/database"
+	"github.com/GavinLonDigital/StreamSense/Server/StreamSenseServer/routes"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -22,7 +22,7 @@ func main() {
 	router := gin.Default()
 
 	router.GET("/hello", func(c *gin.Context) {
-		c.String(200, "Hello, MagicStreamMovies!")
+		c.String(200, "Hello, StreamSense!")
 	})
 
 	err := godotenv.Load(".env")

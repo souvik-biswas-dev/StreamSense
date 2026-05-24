@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/utils"
+	"github.com/GavinLonDigital/StreamSense/Server/StreamSenseServer/utils"
 	"github.com/gin-gonic/gin"
 )
 

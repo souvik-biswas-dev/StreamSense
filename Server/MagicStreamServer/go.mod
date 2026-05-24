@@ -1,4 +1,4 @@
-module github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer
+module github.com/GavinLonDigital/StreamSense/Server/StreamSenseServer
 
 go 1.24.2
 
