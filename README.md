@@ -562,6 +562,97 @@ sequenceDiagram
 
 ---
 
+### Sequence Diagrams — Feature Flows
+
+#### Movie Streaming
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Movie as Movie Card
+    participant RequiredAuth as RequiredAuth Guard
+    participant Stream as StreamMovie Component
+    participant YouTube as YouTube (Embedded)
+
+    User->>Movie: Click movie card
+    Movie->>RequiredAuth: Navigate to /stream/:yt_id
+    RequiredAuth->>RequiredAuth: Check auth context
+    alt Not authenticated
+        RequiredAuth->>User: Redirect to /login
+    else Authenticated
+        RequiredAuth->>Stream: Render StreamMovie
+        Stream->>YouTube: Embed player (youtube.com/watch?v=yt_id)
+        YouTube-->>Stream: Video player ready
+        Stream->>User: Display embedded video player
+        User->>Stream: Play / pause / seek
+    end
+```
+
+#### Personalized Recommendations
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Recommended as Recommended Component
+    participant Interceptor as useAxiosPrivate
+    participant Middleware as AuthMiddleware
+    participant Controller as MovieController
+    participant DB as MongoDB
+
+    User->>Recommended: Navigate to /recommended
+    Recommended->>Interceptor: GET /recommendedmovies
+    Interceptor->>Middleware: Request with access_token cookie
+    Middleware->>Middleware: ValidateToken(access_token)
+    Middleware->>Middleware: Extract userId and role → set in Gin context
+    Middleware->>Controller: Forward to handler
+    Controller->>DB: Find user by userId → get favourite_genres
+    DB-->>Controller: Genre[] list
+    Controller->>DB: Find movies matching genres, sort by ranking ASC, limit 5
+    DB-->>Controller: Movie[] results
+    Controller-->>Interceptor: 200 OK + Movie[]
+    Interceptor-->>Recommended: Movie data
+    Recommended->>User: Render personalized movies grid
+```
+
+#### Admin Review and Sentiment Analysis
+
+```mermaid
+sequenceDiagram
+    actor Admin
+    participant Review as Review Component
+    participant Interceptor as useAxiosPrivate
+    participant Middleware as AuthMiddleware
+    participant Controller as MovieController
+    participant LangChain as LangChain (OpenAI)
+    participant DB as MongoDB
+
+    Admin->>Review: Navigate to /review/:imdb_id
+    Review->>Interceptor: GET /movie/:imdb_id
+    Interceptor->>Controller: Authenticated request
+    Controller->>DB: Find movie by imdb_id
+    DB-->>Controller: Movie document
+    Controller-->>Review: Movie with existing review and ranking
+    Review->>Admin: Display movie info + review textarea (admin role)
+
+    Admin->>Review: Write review text and click Submit
+    Review->>Interceptor: PATCH /updatereview/:imdb_id {admin_review}
+    Interceptor->>Middleware: Request with access_token
+    Middleware->>Middleware: ValidateToken → verify role = ADMIN
+    Middleware->>Controller: Forward to handler
+    Controller->>DB: Fetch all rankings (Excellent, Good, Okay, Bad, Terrible)
+    DB-->>Controller: Ranking[] list
+    Controller->>LangChain: Analyze sentiment of review against ranking options
+    LangChain->>LangChain: Call OpenAI API with prompt + review text
+    LangChain-->>Controller: Sentiment string (e.g. "Excellent")
+    Controller->>Controller: Map sentiment to ranking_value (1–5)
+    Controller->>DB: Update movie (admin_review, ranking)
+    DB-->>Controller: Updated OK
+    Controller-->>Review: 200 OK + updated Movie
+    Review->>Admin: Display updated review and ranking badge
+```
+
+---
+
 ## License
 
 MIT
