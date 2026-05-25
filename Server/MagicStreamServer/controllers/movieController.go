@@ -16,7 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
-	"github.com/tmc/langchaingo/llms/openai"
+	"github.com/tmc/langchaingo/llms/googleai"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -140,6 +140,7 @@ func AdminReviewUpdate(client *mongo.Client) gin.HandlerFunc {
 		}
 		sentiment, rankVal, err := GetReviewRanking(req.AdminReview, client, c)
 		if err != nil {
+			log.Println("GetReviewRanking error:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error getting review ranking"})
 			return
 		}
@@ -202,13 +203,18 @@ func GetReviewRanking(admin_review string, client *mongo.Client, c *gin.Context)
 		log.Println("Warning: .env file not found")
 	}
 
-	OpenAiApiKey := os.Getenv("OPENAI_API_KEY")
+	GeminiApiKey := os.Getenv("GEMINI_API_KEY")
 
-	if OpenAiApiKey == "" {
-		return "", 0, errors.New("could not read OPENAI_API_KEY")
+	if GeminiApiKey == "" {
+		return "", 0, errors.New("could not read GEMINI_API_KEY")
 	}
 
-	llm, err := openai.New(openai.WithToken(OpenAiApiKey))
+	geminiModel := os.Getenv("GEMINI_MODEL")
+	if geminiModel == "" {
+		geminiModel = "gemini-2.0-flash"
+	}
+
+	llm, err := googleai.New(c, googleai.WithAPIKey(GeminiApiKey), googleai.WithDefaultModel(geminiModel))
 
 	if err != nil {
 		return "", 0, err
@@ -223,6 +229,8 @@ func GetReviewRanking(admin_review string, client *mongo.Client, c *gin.Context)
 	if err != nil {
 		return "", 0, err
 	}
+
+	response = strings.TrimSpace(response)
 	rankVal := 0
 
 	for _, ranking := range rankings {
